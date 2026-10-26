@@ -104,7 +104,7 @@ const fetchNews = () =>
 
 // ---------- Markets (Yahoo Finance chart data for stocks, CoinGecko for crypto; both keyless) ----------
 
-async function fetchStock({ symbol, name }) {
+async function fetchStock({ symbol, name, market = "US" }) {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`;
   const d = await get(`https://query1.finance.yahoo.com${path}`).catch(() => get(`https://query2.finance.yahoo.com${path}`));
   const r = d.chart?.result?.[0];
@@ -113,8 +113,11 @@ async function fetchStock({ symbol, name }) {
   const closes = (r.indicators.quote[0].close ?? []).filter((c) => c != null).slice(-10);
   const price = r.meta.regularMarketPrice ?? closes.at(-1);
   const prev = closes.length >= 2 ? closes.at(-2) : r.meta.chartPreviousClose;
-  const asOf = new Date(r.meta.regularMarketTime * 1000).toISOString().slice(0, 10);
-  return { symbol, name, price, change: ((price - prev) / prev) * 100, spark: closes, asOf };
+  // The trading date in the exchange's own timezone, so Taipei and New York each show their session.
+  const asOf = new Intl.DateTimeFormat("en-CA", { timeZone: r.meta.exchangeTimezoneName || "UTC" }).format(new Date(r.meta.regularMarketTime * 1000));
+  // Indices (^TWII, ^GSPC) are points, not money.
+  const currency = symbol.startsWith("^") ? null : r.meta.currency || "USD";
+  return { symbol: symbol.replace(/^\^|\.TWO?$/g, ""), name, market, currency, price, change: ((price - prev) / prev) * 100, spark: closes, asOf };
 }
 
 async function fetchCrypto() {
@@ -142,7 +145,9 @@ async function fetchMarkets() {
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const tz = config.timezone;
 const fmt = (d, opts) => new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opts }).format(d);
-const money = (n) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n < 10 ? 4 : 2 });
+const money = (n, currency = "USD") => currency
+  ? n.toLocaleString("en-US", { style: "currency", currency, maximumFractionDigits: n < 10 ? 4 : 2 })
+  : n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 const pct = (n) => `${n >= 0 ? "▲" : "▼"} ${Math.abs(n).toFixed(2)}%`;
 const notice = (msg) => `<p class="notice">${esc(msg)}</p>`;
 // Open-Meteo returns local times without an offset ("2026-10-26T07:12"); show them as-is.
@@ -197,15 +202,18 @@ function quoteRow(q) {
   return `<tr>
     <td><strong>${esc(q.symbol)}</strong><span class="muted">${esc(q.name)}</span></td>
     <td class="spark-cell">${q.spark ? sparkline(q.spark) : ""}</td>
-    <td class="num">${money(q.price)}</td>
+    <td class="num">${money(q.price, q.currency)}</td>
     <td class="num ${dir}">${Number.isFinite(q.change) ? pct(q.change) : "—"}</td>
   </tr>`;
 }
 
 function renderMarkets(m) {
-  const stocks = m.stocks.length
-    ? `<table><caption>Stocks · as of${m.stocks[0].asOf ? ` ${esc(m.stocks[0].asOf)}` : ""}</caption>${m.stocks.map(quoteRow).join("")}</table>`
-    : "";
+  // One table per market, in config order.
+  const markets = [...new Set(m.stocks.map((q) => q.market))];
+  const stocks = markets.map((name) => {
+    const rows = m.stocks.filter((q) => q.market === name);
+    return `<table><caption>${esc(name)} stocks · ${esc(rows[0].asOf)}</caption>${rows.map(quoteRow).join("")}</table>`;
+  }).join("");
   const crypto = m.crypto.ok && m.crypto.data.length
     ? `<table><caption>Crypto · 24h</caption>${m.crypto.data.map(quoteRow).join("")}</table>`
     : "";

@@ -27,20 +27,49 @@
   "markets": {
     "stocks": [
       {
+        "symbol": "^TWII",
+        "name": "TAIEX",
+        "market": "Taiwan"
+      },
+      {
+        "symbol": "2330.TW",
+        "name": "TSMC",
+        "market": "Taiwan"
+      },
+      {
+        "symbol": "2454.TW",
+        "name": "MediaTek",
+        "market": "Taiwan"
+      },
+      {
+        "symbol": "2317.TW",
+        "name": "Hon Hai (Foxconn)",
+        "market": "Taiwan"
+      },
+      {
+        "symbol": "0050.TW",
+        "name": "Yuanta Taiwan 50 ETF",
+        "market": "Taiwan"
+      },
+      {
         "symbol": "SPY",
-        "name": "S&P 500 ETF"
+        "name": "S&P 500 ETF",
+        "market": "US"
       },
       {
         "symbol": "QQQ",
-        "name": "Nasdaq 100 ETF"
+        "name": "Nasdaq 100 ETF",
+        "market": "US"
       },
       {
         "symbol": "AAPL",
-        "name": "Apple"
+        "name": "Apple",
+        "market": "US"
       },
       {
         "symbol": "NVDA",
-        "name": "Nvidia"
+        "name": "Nvidia",
+        "market": "US"
       }
     ],
     "crypto": [
