@@ -11,11 +11,11 @@ Live site: https://tzuhao84.github.io/Briefing/
 | Section  | Source |
 |----------|--------|
 | Weather  | [Open-Meteo](https://open-meteo.com/) |
-| Stocks   | [Stooq](https://stooq.com/) daily closes |
+| Stocks   | [Yahoo Finance](https://finance.yahoo.com/) chart data |
 | Crypto   | [CoinGecko](https://www.coingecko.com/) |
 | News     | RSS feeds (BBC, Hacker News by default) |
 
-The GitHub Actions workflow in `.github/workflows/pages.yml` rebuilds the site and deploys it to GitHub Pages on every push to `main`, every 3 hours, and on demand (**Actions → Build and deploy briefing → Run workflow**). If a source fails, only that section shows a notice.
+The GitHub Actions workflow in `.github/workflows/pages.yml` rebuilds the site and publishes it to the `gh-pages` branch (served by GitHub Pages) on every push to `main`, every 3 hours, and on demand (**Actions → Build and deploy briefing → Run workflow**). If a source fails, only that section shows a notice.
 
 ## Customize
 
@@ -33,6 +33,8 @@ node scripts/build.mjs
 open dist/index.html
 ```
 
-## One-time setup
+## If the site doesn't appear
 
-In the repository's **Settings → Pages**, set **Source** to **GitHub Actions**.
+GitHub normally turns on Pages automatically once the `gh-pages` branch exists. If it doesn't, open
+https://github.com/tzuhao84/Briefing/settings/pages in a browser (the GitHub app has no repository settings),
+choose **Deploy from a branch**, then select **gh-pages** and **/ (root)**.

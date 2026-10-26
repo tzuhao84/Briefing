@@ -102,16 +102,19 @@ const fetchNews = () =>
     ...(await settle(`news:${feed.name}`, async () => parseFeed(await get(feed.url, "text"), config.news.itemsPerFeed))),
   })));
 
-// ---------- Markets (Stooq for stocks, CoinGecko for crypto; both keyless) ----------
+// ---------- Markets (Yahoo Finance chart data for stocks, CoinGecko for crypto; both keyless) ----------
 
 async function fetchStock({ symbol, name }) {
-  // Last ~10 daily closes; the final two give the day's change.
-  const csv = await get(`https://stooq.com/q/d/l/?s=${symbol.toLowerCase()}.us&i=d`, "text");
-  const rows = csv.trim().split("\n").slice(1).map((r) => r.split(",")).filter((r) => r.length >= 5 && !isNaN(+r[4]));
-  if (rows.length < 2) throw new Error(`no data for ${symbol}`);
-  const closes = rows.slice(-10).map((r) => +r[4]);
-  const [prev, last] = closes.slice(-2);
-  return { symbol, name, price: last, change: ((last - prev) / prev) * 100, spark: closes, asOf: rows.at(-1)[0] };
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`;
+  const d = await get(`https://query1.finance.yahoo.com${path}`).catch(() => get(`https://query2.finance.yahoo.com${path}`));
+  const r = d.chart?.result?.[0];
+  if (!r) throw new Error(`no data for ${symbol}`);
+  // Last ~10 daily closes for the sparkline; the change is against the previous session's close.
+  const closes = (r.indicators.quote[0].close ?? []).filter((c) => c != null).slice(-10);
+  const price = r.meta.regularMarketPrice ?? closes.at(-1);
+  const prev = closes.length >= 2 ? closes.at(-2) : r.meta.chartPreviousClose;
+  const asOf = new Date(r.meta.regularMarketTime * 1000).toISOString().slice(0, 10);
+  return { symbol, name, price, change: ((price - prev) / prev) * 100, spark: closes, asOf };
 }
 
 async function fetchCrypto() {
@@ -201,7 +204,7 @@ function quoteRow(q) {
 
 function renderMarkets(m) {
   const stocks = m.stocks.length
-    ? `<table><caption>Stocks · last close${m.stocks[0].asOf ? ` ${esc(m.stocks[0].asOf)}` : ""}</caption>${m.stocks.map(quoteRow).join("")}</table>`
+    ? `<table><caption>Stocks · as of${m.stocks[0].asOf ? ` ${esc(m.stocks[0].asOf)}` : ""}</caption>${m.stocks.map(quoteRow).join("")}</table>`
     : "";
   const crypto = m.crypto.ok && m.crypto.data.length
     ? `<table><caption>Crypto · 24h</caption>${m.crypto.data.map(quoteRow).join("")}</table>`
@@ -235,7 +238,7 @@ function render({ weather, news, markets, now }) {
   <section class="card markets"><h2>Markets</h2>${renderMarkets(markets)}</section>
   <section class="card news"><h2>Headlines</h2><div class="feeds">${renderNews(news)}</div></section>
 </main>
-<footer class="muted">Weather: Open-Meteo · Stocks: Stooq · Crypto: CoinGecko · News: RSS. Rebuilt automatically by GitHub Actions.</footer>
+<footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance · Crypto: CoinGecko · News: RSS. Rebuilt automatically by GitHub Actions.</footer>
 </body>
 </html>
 `;
