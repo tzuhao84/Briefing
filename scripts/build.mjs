@@ -109,12 +109,18 @@ async function fetchYahoo({ symbol, name, market = "US" }) {
   const d = await get(`https://query1.finance.yahoo.com${path}`).catch(() => get(`https://query2.finance.yahoo.com${path}`));
   const r = d.chart?.result?.[0];
   if (!r) throw new Error(`no data for ${symbol}`);
-  // Last ~10 daily closes for the sparkline; the change is against the previous session's close.
-  const closes = (r.indicators.quote[0].close ?? []).filter((c) => c != null).slice(-10);
-  const price = r.meta.regularMarketPrice ?? closes.at(-1);
-  const prev = closes.length >= 2 ? closes.at(-2) : r.meta.chartPreviousClose;
-  // The trading date in the exchange's own timezone, so Taipei and New York each show their session.
-  const asOf = new Intl.DateTimeFormat("en-CA", { timeZone: r.meta.exchangeTimezoneName || "UTC" }).format(new Date(r.meta.regularMarketTime * 1000));
+  // Trading dates in the exchange's own timezone, so Taipei and New York each show their session.
+  const day = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: r.meta.exchangeTimezoneName || "UTC" }).format(new Date(t * 1000));
+  const bars = (r.timestamp ?? [])
+    .map((t, i) => ({ date: day(t), close: r.indicators.quote[0].close?.[i] }))
+    .filter((b) => b.close != null);
+  const asOf = day(r.meta.regularMarketTime);
+  const price = r.meta.regularMarketPrice ?? bars.at(-1)?.close;
+  // Yahoo can repeat the latest session as an extra bar (it does for Taiwan), so the previous close is
+  // the last bar from an earlier day, not simply the second-to-last bar.
+  const prev = bars.findLast((b) => b.date < asOf)?.close ?? r.meta.chartPreviousClose;
+  // Last ~10 sessions for the sparkline, one point per day.
+  const closes = [...new Map(bars.map((b) => [b.date, b.close])).values()].slice(-10);
   // Indices (^TWII, ^GSPC) are points, not money.
   const currency = symbol.startsWith("^") ? null : r.meta.currency || "USD";
   return { symbol: symbol.replace(/^\^|\.TWO?$/g, ""), name, market, currency, price, delta: price - prev, change: ((price - prev) / prev) * 100, spark: closes, asOf, source: "Yahoo" };
