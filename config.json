@@ -1,0 +1,30 @@
+{
+  "title": "Daily Briefing",
+  "timezone": "America/New_York",
+  "weather": {
+    "name": "New York",
+    "latitude": 40.71,
+    "longitude": -74.01,
+    "units": "celsius"
+  },
+  "news": {
+    "itemsPerFeed": 6,
+    "feeds": [
+      { "name": "World", "url": "https://feeds.bbci.co.uk/news/world/rss.xml" },
+      { "name": "Technology", "url": "https://feeds.bbci.co.uk/news/technology/rss.xml" },
+      { "name": "Hacker News", "url": "https://hnrss.org/frontpage" }
+    ]
+  },
+  "markets": {
+    "stocks": [
+      { "symbol": "SPY", "name": "S&P 500 ETF" },
+      { "symbol": "QQQ", "name": "Nasdaq 100 ETF" },
+      { "symbol": "AAPL", "name": "Apple" },
+      { "symbol": "NVDA", "name": "Nvidia" }
+    ],
+    "crypto": [
+      { "id": "bitcoin", "symbol": "BTC", "name": "Bitcoin" },
+      { "id": "ethereum", "symbol": "ETH", "name": "Ethereum" }
+    ]
+  }
+}
