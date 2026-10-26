@@ -5,8 +5,8 @@
   --muted: #6b6860;
   --line: #e4e0d6;
   --accent: #b4542b;
-  --up: #1f7a4d;
-  --down: #b3261e;
+  --green: #1f7a4d;
+  --red: #c62828;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -17,8 +17,8 @@
     --muted: #9d9a91;
     --line: #33322e;
     --accent: #e4875c;
-    --up: #5cc493;
-    --down: #f2877e;
+    --green: #5cc493;
+    --red: #f2877e;
     color-scheme: dark;
   }
 }
@@ -59,8 +59,13 @@ caption { text-align: left; font-size: 0.75rem; color: var(--muted); padding-bot
 td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: middle; }
 td span.muted { display: block; font-size: 0.78rem; }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
-.up { color: var(--up); }
-.down { color: var(--down); }
+/* US convention: green up, red down. Taiwan/Asia convention (body.rise-red): red up, green down. */
+.up { color: var(--green); }
+.down { color: var(--red); }
+.rise-red .up { color: var(--red); }
+.rise-red .down { color: var(--green); }
+.chg span { display: block; }
+.chg .pct { font-size: 0.8rem; }
 .spark-cell { width: 90px; text-align: right; }
 .spark { width: 80px; height: 24px; }
 .spark polyline { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; }

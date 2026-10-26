@@ -25,6 +25,7 @@
     ]
   },
   "markets": {
+    "colors": "taiwan",
     "stocks": [
       {
         "symbol": "^TWII",

@@ -102,9 +102,9 @@ const fetchNews = () =>
     ...(await settle(`news:${feed.name}`, async () => parseFeed(await get(feed.url, "text"), config.news.itemsPerFeed))),
   })));
 
-// ---------- Markets (Yahoo Finance chart data for stocks, CoinGecko for crypto; both keyless) ----------
+// ---------- Markets (Yahoo Finance chart data for stocks, TWSE as a Taiwan fallback, CoinGecko for crypto; all keyless) ----------
 
-async function fetchStock({ symbol, name, market = "US" }) {
+async function fetchYahoo({ symbol, name, market = "US" }) {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`;
   const d = await get(`https://query1.finance.yahoo.com${path}`).catch(() => get(`https://query2.finance.yahoo.com${path}`));
   const r = d.chart?.result?.[0];
@@ -117,7 +117,51 @@ async function fetchStock({ symbol, name, market = "US" }) {
   const asOf = new Intl.DateTimeFormat("en-CA", { timeZone: r.meta.exchangeTimezoneName || "UTC" }).format(new Date(r.meta.regularMarketTime * 1000));
   // Indices (^TWII, ^GSPC) are points, not money.
   const currency = symbol.startsWith("^") ? null : r.meta.currency || "USD";
-  return { symbol: symbol.replace(/^\^|\.TWO?$/g, ""), name, market, currency, price, change: ((price - prev) / prev) * 100, spark: closes, asOf };
+  return { symbol: symbol.replace(/^\^|\.TWO?$/g, ""), name, market, currency, price, delta: price - prev, change: ((price - prev) / prev) * 100, spark: closes, asOf, source: "Yahoo" };
+}
+
+// TWSE's official open data: the latest session's close for every listed stock, and the market indices.
+// Fetched once per build and shared by all Taiwan symbols.
+let twseStocks, twseIndices;
+const num = (v) => parseFloat(String(v ?? "").replace(/[^0-9.+-]/g, ""));
+// TWSE dates are ROC calendar ("1151026" = 2026-10-26).
+const rocDate = (v) => /^\d{7}$/.test(v ?? "") ? `${+v.slice(0, 3) + 1911}-${v.slice(3, 5)}-${v.slice(5, 7)}` : null;
+
+async function fetchTwse({ symbol, name, market }) {
+  let close, delta, date;
+  if (symbol === "^TWII") {
+    twseIndices ??= get("https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX");
+    const row = (await twseIndices).find((r) => r["指數"] === "發行量加權股價指數");
+    if (!row) throw new Error("TAIEX not in TWSE index list");
+    close = num(row["收盤指數"]);
+    delta = num(row["漲跌點數"]) * (row["漲跌"] === "-" ? -1 : 1);
+    date = rocDate(row["日期"]);
+  } else {
+    twseStocks ??= get("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL");
+    const row = (await twseStocks).find((r) => r.Code === symbol.replace(/\.TW$/, ""));
+    if (!row) throw new Error(`${symbol} not in TWSE daily list`);
+    close = num(row.ClosingPrice);
+    delta = num(row.Change);
+    date = rocDate(row.Date);
+  }
+  if (!Number.isFinite(close)) throw new Error(`no TWSE close for ${symbol}`);
+  if (!Number.isFinite(delta)) delta = 0;
+  return {
+    symbol: symbol.replace(/^\^|\.TW$/g, ""), name, market, currency: symbol.startsWith("^") ? null : "TWD",
+    price: close, delta, change: (delta / (close - delta)) * 100, asOf: date, source: "TWSE",
+  };
+}
+
+const isTwse = (symbol) => symbol === "^TWII" || symbol.endsWith(".TW");
+
+async function fetchStock(s) {
+  if (!isTwse(s.symbol)) return fetchYahoo(s);
+  // FORCE_TWSE lets a manual workflow run exercise the fallback.
+  if (process.env.FORCE_TWSE === "true") return fetchTwse(s);
+  return fetchYahoo(s).catch((err) => {
+    console.warn(`[stock:${s.symbol}] Yahoo failed (${err.message}); trying TWSE`);
+    return fetchTwse(s);
+  });
 }
 
 async function fetchCrypto() {
@@ -127,6 +171,7 @@ async function fetchCrypto() {
   const d = await get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
   return list.filter((c) => d[c.id]).map((c) => ({
     symbol: c.symbol, name: c.name, price: d[c.id].usd, change: d[c.id].usd_24h_change,
+    delta: d[c.id].usd - d[c.id].usd / (1 + d[c.id].usd_24h_change / 100),
   }));
 }
 
@@ -148,7 +193,8 @@ const fmt = (d, opts) => new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opt
 const money = (n, currency = "USD") => currency
   ? n.toLocaleString("en-US", { style: "currency", currency, maximumFractionDigits: n < 10 ? 4 : 2 })
   : n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-const pct = (n) => `${n >= 0 ? "▲" : "▼"} ${Math.abs(n).toFixed(2)}%`;
+const pct = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toFixed(2)}%`;
+const delta = (n, ref) => `${n > 0 ? "▲" : n < 0 ? "▼" : "–"} ${Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: ref < 10 ? 4 : 2 })}`;
 const notice = (msg) => `<p class="notice">${esc(msg)}</p>`;
 // Open-Meteo returns local times without an offset ("2026-10-26T07:12"); show them as-is.
 const clock = (iso) => iso.slice(11, 16);
@@ -198,12 +244,14 @@ function renderNews(feeds) {
 }
 
 function quoteRow(q) {
-  const dir = q.change >= 0 ? "up" : "down";
+  const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : "flat";
   return `<tr>
     <td><strong>${esc(q.symbol)}</strong><span class="muted">${esc(q.name)}</span></td>
     <td class="spark-cell">${q.spark ? sparkline(q.spark) : ""}</td>
     <td class="num">${money(q.price, q.currency)}</td>
-    <td class="num ${dir}">${Number.isFinite(q.change) ? pct(q.change) : "—"}</td>
+    <td class="num chg ${dir}">${Number.isFinite(q.change)
+      ? `${Number.isFinite(q.delta) ? `<span>${delta(q.delta, q.price)}</span>` : ""}<span class="pct">${pct(q.change)}</span>`
+      : "—"}</td>
   </tr>`;
 }
 
@@ -212,7 +260,9 @@ function renderMarkets(m) {
   const markets = [...new Set(m.stocks.map((q) => q.market))];
   const stocks = markets.map((name) => {
     const rows = m.stocks.filter((q) => q.market === name);
-    return `<table><caption>${esc(name)} stocks · ${esc(rows[0].asOf)}</caption>${rows.map(quoteRow).join("")}</table>`;
+    const asOf = rows.find((q) => q.asOf)?.asOf;
+    const sources = [...new Set(rows.map((q) => q.source))].join(" + ");
+    return `<table><caption>${esc(name)} stocks${asOf ? ` · ${esc(asOf)}` : ""} · ${esc(sources)}</caption>${rows.map(quoteRow).join("")}</table>`;
   }).join("");
   const crypto = m.crypto.ok && m.crypto.data.length
     ? `<table><caption>Crypto · 24h</caption>${m.crypto.data.map(quoteRow).join("")}</table>`
@@ -233,7 +283,7 @@ function render({ weather, news, markets, now }) {
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="${config.markets.colors === "us" ? "" : "rise-red"}">
 <header>
   <div>
     <p class="eyebrow">${esc(config.title)}</p>
@@ -246,7 +296,7 @@ function render({ weather, news, markets, now }) {
   <section class="card markets"><h2>Markets</h2>${renderMarkets(markets)}</section>
   <section class="card news"><h2>Headlines</h2><div class="feeds">${renderNews(news)}</div></section>
 </main>
-<footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance · Crypto: CoinGecko · News: RSS. Rebuilt automatically by GitHub Actions.</footer>
+<footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance, TWSE · Crypto: CoinGecko · News: RSS. Rebuilt automatically by GitHub Actions.</footer>
 </body>
 </html>
 `;

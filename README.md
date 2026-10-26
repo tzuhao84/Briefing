@@ -11,7 +11,7 @@ Live site: https://tzuhao84.github.io/Briefing/
 | Section  | Source |
 |----------|--------|
 | Weather  | [Open-Meteo](https://open-meteo.com/) |
-| Stocks   | [Yahoo Finance](https://finance.yahoo.com/) chart data |
+| Stocks   | [Yahoo Finance](https://finance.yahoo.com/) chart data; [TWSE open data](https://openapi.twse.com.tw/) as a fallback for Taiwan |
 | Crypto   | [CoinGecko](https://www.coingecko.com/) |
 | News     | RSS feeds (BBC, Hacker News by default) |
 
@@ -24,7 +24,7 @@ Edit `config.json`:
 - `timezone`: IANA zone for the date and update time (e.g. `Asia/Taipei`)
 - `weather`: city name, `latitude`, `longitude`, and `units` (`celsius` or `fahrenheit`)
 - `news.feeds`: any RSS or Atom feed URLs
-- `markets.stocks`: Yahoo Finance symbols (`2330.TW` for Taiwan, `^TWII` for an index, `AAPL` for US) with a `market` label that groups them; `markets.crypto`: CoinGecko coin IDs
+- `markets.stocks`: Yahoo Finance symbols (`2330.TW` for Taiwan, `^TWII` for an index, `AAPL` for US) with a `market` label that groups them; `markets.colors`: `taiwan` (red up, green down) or `us` (green up, red down); `markets.crypto`: CoinGecko coin IDs
 
 ## Run locally
 

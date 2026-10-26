@@ -7,6 +7,11 @@ on:
     # Every 3 hours (UTC) so the briefing is fresh whenever you open it.
     - cron: "17 */3 * * *"
   workflow_dispatch:
+    inputs:
+      force_twse:
+        description: "Use TWSE instead of Yahoo for Taiwan stocks (to test the fallback)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -24,6 +29,8 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/build.mjs
+        env:
+          FORCE_TWSE: ${{ inputs.force_twse }}
       # Publish dist/ as the only commit on the gh-pages branch, which GitHub Pages serves.
       - name: Push to gh-pages
         working-directory: dist
