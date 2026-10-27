@@ -16,7 +16,7 @@ Live site: https://tzuhao84.github.io/Briefing/
 | News     | RSS feeds (Focus Taiwan / Taipei Times, BBC by default) |
 | Inspiration | A daily quote from `src/quotes.json`, plus one story from [Good News Network](https://www.goodnewsnetwork.org/) |
 
-The GitHub Actions workflow in `.github/workflows/pages.yml` rebuilds the site and publishes it to the `gh-pages` branch (served by GitHub Pages) on every push to `main`, every 3 hours, and on demand (**Actions → Build and deploy briefing → Run workflow**). If a source fails, only that section shows a notice.
+The GitHub Actions workflow in `.github/workflows/pages.yml` rebuilds the site and publishes it to the `gh-pages` branch (served by GitHub Pages) on every push to `main`, every 6 hours (00:05, 06:05, 12:05 and 18:05 Taipei time), and on demand (**Actions → Build and deploy briefing → Run workflow**). If a source fails, only that section shows a notice. The date and clock at the top run live in the browser.
 
 ## Customize
 

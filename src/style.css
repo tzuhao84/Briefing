@@ -37,7 +37,10 @@ h2 { margin: 0 0 14px; font-size: 0.8rem; text-transform: uppercase; letter-spac
 h3 { margin: 0 0 8px; font-size: 1rem; }
 .eyebrow { margin: 0 0 4px; color: var(--accent); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .muted { color: var(--muted); }
-.updated { margin: 0; font-size: 0.85rem; }
+.when { text-align: right; }
+.clock { margin: 0; font-size: clamp(1.3rem, 3.5vw, 1.8rem); font-weight: 600; font-variant-numeric: tabular-nums; }
+.updated { margin: 0; font-size: 0.8rem; }
+@media (max-width: 420px) { .when { text-align: left; } }
 
 main { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-width: 0; }

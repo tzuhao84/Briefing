@@ -336,9 +336,12 @@ function render({ weather, news, markets, quote, story, now }) {
 <header>
   <div>
     <p class="eyebrow">${esc(config.title)}</p>
-    <h1>${fmt(now, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</h1>
+    <h1 id="date">${fmt(now, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</h1>
   </div>
-  <p class="updated muted">Updated ${fmt(now, { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</p>
+  <div class="when">
+    <p id="clock" class="clock">${fmt(now, { hour: "numeric", minute: "2-digit" })}</p>
+    <p class="updated muted">Weather, news &amp; markets updated ${fmt(now, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+  </div>
 </header>
 <main>
   <section class="card inspire"><h2>Today's thought</h2>${renderInspiration(quote, story)}</section>
@@ -347,6 +350,17 @@ function render({ weather, news, markets, quote, story, now }) {
   <section class="card news"><h2>Headlines</h2><div class="feeds">${renderNews(news)}</div></section>
 </main>
 <footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance, TWSE · Crypto: CoinGecko · News: RSS (Focus Taiwan / Taipei Times, BBC, Good News Network). Rebuilt automatically by GitHub Actions.</footer>
+<script>
+  // Keep the date and clock current between rebuilds, always in the briefing's timezone.
+  const tz = ${JSON.stringify(tz)};
+  const fmt = (opts) => new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opts }).format(new Date());
+  function tick() {
+    document.getElementById("date").textContent = fmt({ weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    document.getElementById("clock").textContent = fmt({ hour: "numeric", minute: "2-digit", second: "2-digit" });
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
 </body>
 </html>
 `;

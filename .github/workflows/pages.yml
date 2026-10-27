@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Every 3 hours (UTC) so the briefing is fresh whenever you open it.
-    - cron: "17 */3 * * *"
+    # Every 6 hours at 00:05, 06:05, 12:05 and 18:05 Taipei time (UTC+8). Cron runs in UTC.
+    - cron: "5 4,10,16,22 * * *"
   workflow_dispatch:
     inputs:
       force_twse:
