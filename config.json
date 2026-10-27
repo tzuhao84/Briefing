@@ -7,9 +7,20 @@
     "longitude": 121.56,
     "units": "celsius"
   },
+  "inspiration": {
+    "goodNewsFeed": "https://www.goodnewsnetwork.org/feed/"
+  },
   "news": {
     "itemsPerFeed": 6,
     "feeds": [
+      {
+        "name": "Taiwan",
+        "urls": [
+          "https://focustaiwan.tw/rss/aall.xml",
+          "https://www.taipeitimes.com/xml/taiwan.rss",
+          "https://www.taipeitimes.com/xml/index.rss"
+        ]
+      },
       {
         "name": "World",
         "url": "https://feeds.bbci.co.uk/news/world/rss.xml"
@@ -17,10 +28,6 @@
       {
         "name": "Technology",
         "url": "https://feeds.bbci.co.uk/news/technology/rss.xml"
-      },
-      {
-        "name": "Hacker News",
-        "url": "https://hnrss.org/frontpage"
       }
     ]
   },

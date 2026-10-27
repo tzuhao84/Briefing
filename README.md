@@ -13,7 +13,8 @@ Live site: https://tzuhao84.github.io/Briefing/
 | Weather  | [Open-Meteo](https://open-meteo.com/) |
 | Stocks   | [Yahoo Finance](https://finance.yahoo.com/) chart data; [TWSE open data](https://openapi.twse.com.tw/) as a fallback for Taiwan |
 | Crypto   | [CoinGecko](https://www.coingecko.com/) |
-| News     | RSS feeds (BBC, Hacker News by default) |
+| News     | RSS feeds (Focus Taiwan / Taipei Times, BBC by default) |
+| Inspiration | A daily quote from `src/quotes.json`, plus one story from [Good News Network](https://www.goodnewsnetwork.org/) |
 
 The GitHub Actions workflow in `.github/workflows/pages.yml` rebuilds the site and publishes it to the `gh-pages` branch (served by GitHub Pages) on every push to `main`, every 3 hours, and on demand (**Actions → Build and deploy briefing → Run workflow**). If a source fails, only that section shows a notice.
 
@@ -23,7 +24,8 @@ Edit `config.json`:
 
 - `timezone`: IANA zone for the date and update time (e.g. `Asia/Taipei`)
 - `weather`: city name, `latitude`, `longitude`, and `units` (`celsius` or `fahrenheit`)
-- `news.feeds`: any RSS or Atom feed URLs
+- `news.feeds`: any RSS or Atom feeds; give a feed several `urls` to try them in order
+- `inspiration.goodNewsFeed`: the RSS feed for the daily uplifting story (add quotes to `src/quotes.json`)
 - `markets.stocks`: Yahoo Finance symbols (`2330.TW` for Taiwan, `^TWII` for an index, `AAPL` for US) with a `market` label that groups them; `markets.colors`: `taiwan` (red up, green down) or `us` (green up, red down); `markets.crypto`: CoinGecko coin IDs
 
 ## Run locally

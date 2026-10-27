@@ -43,6 +43,16 @@ main { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-width: 0; }
 .news { grid-column: 1 / -1; }
 
+.inspire { grid-column: 1 / -1; }
+.inspire figure { margin: 0; }
+.inspire .original { margin: 0 0 4px; font-size: 1.15rem; color: var(--accent); letter-spacing: 0.05em; }
+.inspire blockquote { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.15rem, 2.6vw, 1.45rem); line-height: 1.4; }
+.inspire figcaption { margin-top: 8px; color: var(--muted); font-size: 0.85rem; }
+.good-news { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.good-news .tag { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--card); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: 1px; }
+.good-news a { color: inherit; }
+.good-news a:hover { color: var(--accent); }
+
 .now { display: flex; align-items: center; gap: 14px; }
 .big-ico { font-size: 3rem; line-height: 1; }
 .temp { font-size: 2.4rem; font-weight: 650; line-height: 1.1; }

@@ -96,11 +96,40 @@ export function parseFeed(xml, limit) {
   }).filter((i) => i.title && /^https?:\/\//.test(i.link));
 }
 
+// A feed may list several `urls`; the first one that returns stories wins.
+async function fetchFeed(urls, limit) {
+  let lastErr;
+  for (const url of urls) {
+    try {
+      const items = parseFeed(await get(url, "text"), limit);
+      if (items.length) return items;
+      lastErr = new Error(`no stories in ${url}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    console.warn(`[feed] ${lastErr.message}`);
+  }
+  throw lastErr;
+}
+
 const fetchNews = () =>
   Promise.all(config.news.feeds.map(async (feed) => ({
     name: feed.name,
-    ...(await settle(`news:${feed.name}`, async () => parseFeed(await get(feed.url, "text"), config.news.itemsPerFeed))),
+    ...(await settle(`news:${feed.name}`, () => fetchFeed(feed.urls ?? [feed.url], config.news.itemsPerFeed))),
   })));
+
+// ---------- Inspiration: a daily quote from src/quotes.json and one uplifting news story ----------
+
+const quotes = JSON.parse(await readFile(new URL("src/quotes.json", root), "utf8"));
+
+// Same quote all day (in the configured timezone), a new one each day.
+function quoteOfTheDay(now) {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: config.timezone }).format(now).split("-").map(Number);
+  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  return quotes[dayNumber % quotes.length];
+}
+
+const fetchGoodNews = () => fetchFeed([config.inspiration.goodNewsFeed], 1).then((items) => items[0]);
 
 // ---------- Markets (Yahoo Finance chart data for stocks, TWSE as a Taiwan fallback, CoinGecko for crypto; all keyless) ----------
 
@@ -250,6 +279,8 @@ function renderNews(feeds) {
 }
 
 function quoteRow(q) {
+  // Round first so float noise like -0.000001 reads as unchanged, not as a fall.
+  q = { ...q, change: Math.round(q.change * 100) / 100, delta: Math.round(q.delta * 1e4) / 1e4 };
   const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : "flat";
   return `<tr>
     <td><strong>${esc(q.symbol)}</strong><span class="muted">${esc(q.name)}</span></td>
@@ -279,7 +310,17 @@ function renderMarkets(m) {
   return (stocks + crypto + (missing.length ? notice(`Couldn't load ${missing.join(" and ")}.`) : "")) || notice("Market data is unavailable right now.");
 }
 
-function render({ weather, news, markets, now }) {
+function renderInspiration(quote, story) {
+  return `
+    <figure>
+      ${quote.original ? `<p class="original" lang="zh-Hant">${esc(quote.original)}</p>` : ""}
+      <blockquote>${esc(quote.text)}</blockquote>
+      <figcaption>— ${esc(quote.source)}</figcaption>
+    </figure>
+    ${story.ok ? `<p class="good-news"><span class="tag">Good news</span> <a href="${esc(story.data.link)}" target="_blank" rel="noopener">${esc(story.data.title)}</a></p>` : ""}`;
+}
+
+function render({ weather, news, markets, quote, story, now }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -298,11 +339,12 @@ function render({ weather, news, markets, now }) {
   <p class="updated muted">Updated ${fmt(now, { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</p>
 </header>
 <main>
+  <section class="card inspire"><h2>Today's thought</h2>${renderInspiration(quote, story)}</section>
   <section class="card weather"><h2>Weather · ${esc(config.weather.name)}</h2>${renderWeather(weather)}</section>
   <section class="card markets"><h2>Markets</h2>${renderMarkets(markets)}</section>
   <section class="card news"><h2>Headlines</h2><div class="feeds">${renderNews(news)}</div></section>
 </main>
-<footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance, TWSE · Crypto: CoinGecko · News: RSS. Rebuilt automatically by GitHub Actions.</footer>
+<footer class="muted">Weather: Open-Meteo · Stocks: Yahoo Finance, TWSE · Crypto: CoinGecko · News: RSS (Focus Taiwan / Taipei Times, BBC, Good News Network). Rebuilt automatically by GitHub Actions.</footer>
 </body>
 </html>
 `;
@@ -311,11 +353,14 @@ function render({ weather, news, markets, now }) {
 // ---------- Main ----------
 
 const now = new Date();
-const [weather, news, markets] = await Promise.all([settle("weather", fetchWeather), fetchNews(), fetchMarkets()]);
+const [weather, news, markets, story] = await Promise.all([
+  settle("weather", fetchWeather), fetchNews(), fetchMarkets(), settle("good news", fetchGoodNews),
+]);
+const quote = quoteOfTheDay(now);
 
 const dist = new URL("dist/", root);
 await mkdir(dist, { recursive: true });
-await writeFile(new URL("index.html", dist), render({ weather, news, markets, now }));
-await writeFile(new URL("data.json", dist), JSON.stringify({ generatedAt: now.toISOString(), weather, news, markets }, null, 2));
+await writeFile(new URL("index.html", dist), render({ weather, news, markets, quote, story, now }));
+await writeFile(new URL("data.json", dist), JSON.stringify({ generatedAt: now.toISOString(), quote, story, weather, news, markets }, null, 2));
 await copyFile(new URL("src/style.css", root), new URL("style.css", dist));
 console.log(`Built dist/ at ${now.toISOString()}`);
