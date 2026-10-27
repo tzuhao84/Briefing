@@ -129,7 +129,9 @@ function quoteOfTheDay(now) {
   return quotes[dayNumber % quotes.length];
 }
 
-const fetchGoodNews = () => fetchFeed([config.inspiration.goodNewsFeed], 1).then((items) => items[0]);
+// Skip the site's recurring roundups ("Good News in History, October 27") to land on a real story.
+const fetchGoodNews = () => fetchFeed([config.inspiration.goodNewsFeed], 10)
+  .then((items) => items.find((i) => !/^good news in history/i.test(i.title)) ?? items[0]);
 
 // ---------- Markets (Yahoo Finance chart data for stocks, TWSE as a Taiwan fallback, CoinGecko for crypto; all keyless) ----------
 
