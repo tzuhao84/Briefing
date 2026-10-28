@@ -97,7 +97,7 @@ td span.muted { display: block; font-size: 0.78rem; }
 .ref-key { display: inline-block; width: 2px; height: 12px; background: var(--muted); }
 
 /* Diverging bars */
-.dv-row { display: grid; grid-template-columns: minmax(84px, 34%) 1fr; align-items: center; gap: 8px; padding: 3px 0; border-radius: 6px; outline: none; }
+.dv-row { display: grid; grid-template-columns: minmax(84px, 30%) 1fr auto; align-items: center; gap: 8px; padding: 3px 0; border-radius: 6px; outline: none; }
 .dv-row:hover, .dv-row:focus-visible { background: var(--line); }
 .dv-label { font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dv-track { position: relative; height: 22px; }
@@ -108,7 +108,7 @@ td span.muted { display: block; font-size: 0.78rem; }
 .dv-bar.down { border-radius: 4px 0 0 4px; background: var(--red); }
 .rise-red .dv-bar.up { background: var(--red); }
 .rise-red .dv-bar.down { background: var(--green); }
-.dv-val { position: absolute; top: 2px; padding: 0 3px; border-radius: 4px; background: var(--card); font-size: 0.75rem; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dv-val { min-width: 4.6em; text-align: right; font-size: 0.75rem; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Small multiples */
 .sm-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }

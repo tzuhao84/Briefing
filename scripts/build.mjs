@@ -331,8 +331,8 @@ function renderMarkets(m) {
 function renderMoves(groups) {
   const all = groups.flatMap((g) => g.rows).filter((q) => Number.isFinite(q.change));
   const max = Math.max(0.5, ...all.map((q) => Math.abs(q.change)));
-  // The longest bar fills 60% of its half, leaving room for the value label at its tip.
-  const pos = (v) => (v / max) * 30;
+  // The longest bar nearly fills its half; values sit in their own column so they never collide.
+  const pos = (v) => (v / max) * 46;
   return groups.map(({ name, rows, bench }) => {
     const bars = rows.filter((q) => !q.benchmark && Number.isFinite(q.change)).sort((a, b) => b.change - a.change);
     if (!bars.length) return "";
@@ -343,7 +343,6 @@ function renderMoves(groups) {
       <div class="dv">${bars.map((q) => {
         const w = Math.abs(pos(q.change));
         const side = q.change >= 0 ? `left:50%` : `right:50%`;
-        const label = q.change >= 0 ? `left:calc(${50 + w}% + 4px)` : `right:calc(${50 + w}% + 4px)`;
         const tip = `${q.name} · ${arrowPct(q.change)} · ${money(q.price, q.currency)}${bench ? ` · ${q.change >= bench.change ? "beat" : "lagged"} ${bench.name}` : ""}`;
         return `
         <div class="dv-row" tabindex="0" data-tip="${esc(tip)}">
@@ -351,8 +350,8 @@ function renderMoves(groups) {
           <span class="dv-track">
             ${ref != null ? `<i class="dv-ref" style="left:${ref.toFixed(2)}%"></i>` : ""}
             <span class="dv-bar ${dirOf(q.change)}" style="${side};width:${w.toFixed(2)}%"></span>
-            <span class="dv-val" style="${label}">${esc(arrowPct(q.change))}</span>
           </span>
+          <span class="dv-val">${esc(arrowPct(q.change))}</span>
         </div>`;
       }).join("")}
       </div>
