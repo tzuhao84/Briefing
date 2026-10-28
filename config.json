@@ -37,7 +37,8 @@
       {
         "symbol": "^TWII",
         "name": "TAIEX",
-        "market": "Taiwan"
+        "market": "Taiwan",
+        "benchmark": true
       },
       {
         "symbol": "2330.TW",
@@ -55,6 +56,11 @@
         "market": "Taiwan"
       },
       {
+        "symbol": "2308.TW",
+        "name": "Delta Electronics",
+        "market": "Taiwan"
+      },
+      {
         "symbol": "0050.TW",
         "name": "Yuanta Taiwan 50 ETF",
         "market": "Taiwan"
@@ -62,7 +68,8 @@
       {
         "symbol": "SPY",
         "name": "S&P 500 ETF",
-        "market": "US"
+        "market": "US",
+        "benchmark": true
       },
       {
         "symbol": "QQQ",
